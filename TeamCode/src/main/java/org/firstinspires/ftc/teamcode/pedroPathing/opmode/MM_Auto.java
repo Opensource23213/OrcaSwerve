@@ -16,8 +16,8 @@ import java.util.Collections;
 import java.util.List;
 
 @Config
-@Autonomous(name="Far 15 Auto", group="ABC Opmode", preselectTeleOp = "DecodeTeleop")
-public class Far_Auto extends DecodeLibrary{
+@Autonomous(name="Moment Maker", group="ABC Opmode", preselectTeleOp = "DecodeTeleop")
+public class MM_Auto extends DecodeLibrary{
     public double forward = 0.25;
     public Path first_pick;
     public Path pick_after_stuff;
@@ -40,16 +40,16 @@ public class Far_Auto extends DecodeLibrary{
     public double old_color = 1;
     public boolean shooting = false;
     public double index_steps = 0;
-    public static double first_dump_time = 1250;
-    public static double second_dump_time = 2500;
+    public static double first_dump_time = 1000;
+    public static double second_dump_time = 3000;
     @Override
     public void init(){
         color = 1;
         teleop = false;
         if(color == 1){
-            auto_pose =new Pose(0,0, Math.toRadians(-90));
+            auto_pose =new Pose(122,-25, Math.toRadians(-90));
         }else{
-            auto_pose = new Pose(0,0, Math.toRadians(90));
+            auto_pose = new Pose(122,25, Math.toRadians(90));
         }
         initialize();
         follower.setPose(auto_pose);
@@ -58,6 +58,9 @@ public class Far_Auto extends DecodeLibrary{
         }else{
             red_init();
         }
+        intake_system.balls.add("Purple");
+        intake_system.balls.add("Purple");
+        intake_system.balls.add("Purple");
         follower.setMaxPower(1);
         follower.setMaxPowerScaling(1);
         follower.followPath(first_shoot);
@@ -68,13 +71,7 @@ public class Far_Auto extends DecodeLibrary{
         for(LynxModule hub : hubs){
             hub.clearBulkCache();
         }
-        if(color == 0){
-            y_mod = -2;
-            x_mod = -5;
-        }else{
-            x_mod = -6;
-        }
-
+        x_mod = -8;
         turret.zero = true;
         cam.look();
         if(cam.tags.contains(21.0)){
@@ -95,9 +92,9 @@ public class Far_Auto extends DecodeLibrary{
         if(old_color != color || gamepad1.a) {
             initialize();
             if(color == 1){
-                auto_pose =new Pose(0,0, Math.toRadians(-90));
+                auto_pose =new Pose(122,-25, Math.toRadians(-90));
             }else{
-                auto_pose = new Pose(0,0, Math.toRadians(90));
+                auto_pose = new Pose(122,25, Math.toRadians(90));
             }
             follower.setMaxPower(1);
             follower.setMaxPowerScaling(1);
@@ -128,44 +125,26 @@ public class Far_Auto extends DecodeLibrary{
         follower.update();
         turret.turret_move();
         shooter.set_speed = shoot_multiplier * ((dead_distance * .0254) - 1.6) + shoot_power_offset + (speed_increase * abs(turret.target_angle - .5));
-        if(forward >= 6){
-            shooter.set_speed = Math.round(shooter.set_speed / 20) * 20 - 40;
-        }else {
-            shooter.set_speed = Math.round(shooter.set_speed / 20) * 20;
-        }
+        shooter.set_speed = Math.round(shooter.set_speed / 20) * 20 + 60;
         shooter.shooting();
         intake_system.auto();
         auto_sort();
         intake_system.sort();
         auto_pose = follower.getPose();
-        if(forward == 6 || (forward == 7 && follower.getPose().getX() < 70)){
+        if(forward == 6 || forward == 7 || (forward == 8 && follower.getPose().getX() < 70)){
             turret.zero = true;
         }
         if(follower.atParametricEnd() || !follower.isBusy() || follower.isRobotStuck()) {
-            if(forward == .25){
-                intake_system.outtake = false;
-                shoot();
-                shooting = true;
-                if(steps == 2) {
-                    shooting = false;
-                    follower.followPath(first_pick);
-                    forward = .5;
-                    steps = 0;
-                }
-            }else if(forward == .5) {
-                follower.followPath(second_shoot);
-                forward = .75;
-                steps = 0;
-            }else if (forward == .75) {
+            if (forward == .25) {
                 shoot();
                 shooting = true;
                 if(steps == 2){
                     shooting = false;
                     follower.followPath(second_pick);
-                    forward = 1;
+                    forward = .5;
                     steps = 0;
                 }
-            }else if (forward == 1) {
+            }else if (forward == .5) {
                 sort_balls = true;
                 follower.followPath(to_gate);
                 forward = 1.1;
@@ -184,17 +163,17 @@ public class Far_Auto extends DecodeLibrary{
                     steps = 0;
                 }
             }else if(forward == 3){
+                intake_system.outtake = false;
                 shoot();
                 shooting = true;
                 if(steps == 2) {
                     shooting = false;
-                    follower.followPath(third_pick);
+                    follower.followPath(first_pick);
                     forward = 4;
                     steps = 0;
                 }
             }else if(forward == 4) {
-                sort_balls = true;
-                follower.followPath(fourth_shoot);
+                follower.followPath(second_shoot);
                 forward = 5;
                 steps = 0;
             }else if(forward == 5){
@@ -202,19 +181,27 @@ public class Far_Auto extends DecodeLibrary{
                 shooting = true;
                 if(steps == 2) {
                     shooting = false;
-                    follower.followPath(pick_after_stuff);
+                    follower.followPath(gate3);
                     forward = 6;
                     steps = 0;
                 }
             }else if(forward == 6){
+                if(steps == 0){
+                    gate_open.reset();
+                    steps = 1;
+                }else if(steps == 1 && gate_open.milliseconds() > second_dump_time) {
+                    follower.followPath(pick_after_stuff);
+                    forward = 7;
+                    steps = 0;
+                }
+            }else if(forward == 7){
                 follower.followPath(fifth_shoot);
                 sort_balls = true;
+                forward = 8;
+            }else if(forward == 8){
                 shooting_time.reset();
-                forward = 7;
-            }else if(forward == 7){
-                shooting_time.reset();
-                forward = 7.1;
-            }else if(forward == 7.1 && shooting_time.milliseconds() > 500){
+                forward = 8.1;
+            }else if(forward == 8.1 && shooting_time.milliseconds() > 1000){
                 intake_system.spindexer.setPower(-.7);
                 intake_system.spindex_shooting = true;
                 intake_system.flippy_pos = flippy_up;
@@ -227,65 +214,57 @@ public class Far_Auto extends DecodeLibrary{
     public Path to_gate;
 
     public void red_init(){
-        first_shoot = new Path(new BezierLine(new Pose(0,0), new Pose(70, -6)));
+        first_shoot = new Path(new BezierLine(new Pose(123,-24), new Pose(80, -4)));
         first_shoot.setConstantHeadingInterpolation(Math.toRadians(-90));
-        first_pick = new Path(new BezierCurve(first_shoot.getLastControlPoint(), new Pose(48, -3), new Pose(49, -49)));
-        first_pick.setConstantHeadingInterpolation(Math.toRadians(-90));
-        second_shoot = new Path(new BezierCurve(first_pick.getLastControlPoint(),new Pose(49, -20), new Pose(70, -12)));
-        second_shoot.setConstantHeadingInterpolation(Math.toRadians(-90));
-        second_pick = new Path(new BezierCurve(second_shoot.getLastControlPoint(), new Pose(72, -38)));
+        second_pick = new Path(new BezierCurve(first_shoot.getLastControlPoint(), new Pose(70, -39)));
         second_pick.setConstantHeadingInterpolation(Math.toRadians(-90));
-        to_gate = new Path(new BezierCurve(second_pick.getLastControlPoint(), new Pose(68, -35)));
+        to_gate = new Path(new BezierCurve(second_pick.getLastControlPoint(), new Pose(67, -35)));
         to_gate.setConstantHeadingInterpolation(Math.toRadians(0));
-        gate = new Path(new BezierCurve(to_gate.getLastControlPoint(), new Pose(65, -38)));
+        gate = new Path(new BezierCurve(to_gate.getLastControlPoint(), new Pose(64, -40)));
         gate.setConstantHeadingInterpolation(Math.toRadians(0));
-        third_shoot = new Path(new BezierLine(gate.getLastControlPoint(), new Pose(78, -12)));
+        third_shoot = new Path(new BezierLine(gate.getLastControlPoint(), new Pose(72, -8)));
         third_shoot.setConstantHeadingInterpolation(0);
-        third_pick = new Path(new BezierCurve(third_shoot.getLastControlPoint(), new Pose(26, 1), new Pose(24, -46)));
-        third_pick.setConstantHeadingInterpolation(Math.toRadians(-90));
-        fourth_shoot = new Path(new BezierCurve(third_pick.getLastControlPoint(), new Pose(67, -12)));
-        fourth_shoot.setConstantHeadingInterpolation(Math.toRadians(-90));
-        pick_after_stuff = new Path(new BezierCurve(fourth_shoot.getLastControlPoint(), new Pose(40,-45), new Pose(21, -45), new Pose(2, -45)));
+        first_pick = new Path(new BezierCurve(third_shoot.getLastControlPoint(), new Pose(50, -3), new Pose(47, -49)));
+        first_pick.setConstantHeadingInterpolation(Math.toRadians(-90));
+        second_shoot = new Path(new BezierCurve(first_pick.getLastControlPoint(),new Pose(49, -30), new Pose(70, -12)));
+        second_shoot.setConstantHeadingInterpolation(Math.toRadians(-90));
+        gate3 = new Path(new BezierCurve(second_shoot.getLastControlPoint(), new Pose(58, -44)));
+        gate3.setConstantHeadingInterpolation(Math.toRadians(-180));
+        pick_after_stuff = new Path(new BezierCurve(gate3.getLastControlPoint(), new Pose(53,-40), new Pose(45,-47), new Pose(21, -50), new Pose(2, -50)));
         pick_after_stuff.setConstantHeadingInterpolation(Math.toRadians(-180));
-        fifth_shoot = new Path(new BezierLine(pick_after_stuff.getLastControlPoint(), new Pose(94, -6)));
+        fifth_shoot = new Path(new BezierLine(pick_after_stuff.getLastControlPoint(), new Pose(90, -10)));
         fifth_shoot.setConstantHeadingInterpolation(Math.toRadians(-180));
     }
     public void blue_init(){
-        first_shoot = new Path(new BezierLine(new Pose(0,0), new Pose(78, 4)));
+        first_shoot = new Path(new BezierLine(new Pose(123,24), new Pose(78, 4)));
         first_shoot.setConstantHeadingInterpolation(Math.toRadians(90));
-        first_pick = new Path(new BezierCurve(first_shoot.getLastControlPoint(), new Pose(48, 3), new Pose(49, 49)));
-        first_pick.setConstantHeadingInterpolation(Math.toRadians(90));
-        second_shoot = new Path(new BezierCurve(first_pick.getLastControlPoint(),new Pose(49, 20), new Pose(70, 12)));
-        second_shoot.setConstantHeadingInterpolation(Math.toRadians(90));
-        second_pick = new Path(new BezierCurve(second_shoot.getLastControlPoint(), new Pose(72, 40)));
+        second_pick = new Path(new BezierCurve(first_shoot.getLastControlPoint(), new Pose(70, 10), new Pose(70, 40)));
         second_pick.setConstantHeadingInterpolation(Math.toRadians(90));
-        to_gate = new Path(new BezierCurve(second_pick.getLastControlPoint(), new Pose(64, 35)));
+        to_gate = new Path(new BezierCurve(second_pick.getLastControlPoint(), new Pose(67, 35)));
         to_gate.setConstantHeadingInterpolation(Math.toRadians(0));
-        gate = new Path(new BezierCurve(to_gate.getLastControlPoint(), new Pose(61, 40)));
+        gate = new Path(new BezierCurve(to_gate.getLastControlPoint(), new Pose(64, 42)));
         gate.setConstantHeadingInterpolation(Math.toRadians(0));
         third_shoot = new Path(new BezierLine(gate.getLastControlPoint(), new Pose(72, 8)));
         third_shoot.setConstantHeadingInterpolation(0);
-        third_pick = new Path(new BezierCurve(third_shoot.getLastControlPoint(), new Pose(26, 0), new Pose(24, 48)));
-        third_pick.setConstantHeadingInterpolation(Math.toRadians(90));
-        fourth_shoot = new Path(new BezierCurve(third_pick.getLastControlPoint(), new Pose(67, 6)));
-        fourth_shoot.setConstantHeadingInterpolation(Math.toRadians(90));
-        pick_after_stuff = new Path(new BezierCurve(fourth_shoot.getLastControlPoint(), new Pose(40,50), new Pose(21, 52), new Pose(2, 52)));
+        first_pick = new Path(new BezierCurve(third_shoot.getLastControlPoint(), new Pose(52, 3), new Pose(49, 49)));
+        first_pick.setConstantHeadingInterpolation(Math.toRadians(90));
+        second_shoot = new Path(new BezierCurve(first_pick.getLastControlPoint(),new Pose(49, 20), new Pose(70, 12)));
+        second_shoot.setConstantHeadingInterpolation(Math.toRadians(90));
+        gate3 = new Path(new BezierCurve(second_shoot.getLastControlPoint(), new Pose(58, 45)));
+        gate3.setConstantHeadingInterpolation(Math.toRadians(180));
+        pick_after_stuff = new Path(new BezierCurve(gate3.getLastControlPoint(), new Pose(53,40), new Pose(45,47), new Pose(21, 50), new Pose(2, 50)));
         pick_after_stuff.setConstantHeadingInterpolation(Math.toRadians(180));
-        fifth_shoot = new Path(new BezierLine(pick_after_stuff.getLastControlPoint(), new Pose(94, -1)));
+        fifth_shoot = new Path(new BezierLine(pick_after_stuff.getLastControlPoint(), new Pose(95, 0)));
         fifth_shoot.setConstantHeadingInterpolation(Math.toRadians(180));
     }
     public void shoot(){
         if(shooting) {
-            if (steps == 0 && abs(shooter.shoot1.getVelocity() - shooter.set_speed) <= 20 && intake_system.sort_time == 0 && !intake_system.sorting) {
+            if (steps == 0 && abs(shooter.shoot1.getVelocity() - shooter.speed) <= 20 && intake_system.sort_time == 0 && !intake_system.sorting) {
                 shooting_time.reset();
                 steps = .5;
-            } else if(steps == .5 && (forward != 3 || shooting_time.milliseconds() > 500)){
+            } else if(steps == .5){
                 shooting_time.reset();
-                if(forward <= .75){
-                    intake_system.spindexer.setPower(-.7);
-                }else {
-                    intake_system.spindexer.setPower(-.7);
-                }
+                intake_system.spindexer.setPower(-.7);
                 intake_system.spindex_shooting = true;
                 intake_system.flippy_pos = flippy_up;
                 intake_system.blocking = false;
@@ -365,13 +344,13 @@ public class Far_Auto extends DecodeLibrary{
     public ElapsedTime sort_timer = new ElapsedTime();
     public boolean sort_balls = false;
     public boolean override = false;
-    public void auto_sort() {
-        if (!sorted && intake_system.blocking && sort_balls) {
+    public void auto_sort(){
+        if(!sorted && intake_system.blocking && sort_balls) {
             if (intake_system.balls.size() == 3 || override) {
-                if (sort_steps == 0) {
+                if(sort_steps == 0){
                     sort_timer.reset();
                     sort_steps = 1;
-                } else if (sort_steps == 1 && sort_timer.milliseconds() > 500) {
+                }else if(sort_steps == 1 && sort_timer.milliseconds() > 500){
                     sorted = true;
                     override = false;
                     intake_system.sort_time = sort_count();
@@ -380,7 +359,7 @@ public class Far_Auto extends DecodeLibrary{
                 }
             }
 
-        } else if (!intake_system.blocking) {
+        }else if(!intake_system.blocking){
             sorted = false;
         }
     }

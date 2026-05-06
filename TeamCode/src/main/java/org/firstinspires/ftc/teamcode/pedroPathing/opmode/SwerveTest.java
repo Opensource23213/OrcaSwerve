@@ -4,7 +4,9 @@ import static java.lang.Math.abs;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.arcrobotics.ftclib.controller.PIDController;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -12,48 +14,128 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
+import java.util.List;
+
 @Config
 @TeleOp(name="SwerveTest", group="ABC Opmode")
-public class SwerveTest extends DecodeLibrary {
-    public static double fr_offset = -420;
-    public static double fl_offset = 1410;
-    public static double rr_offset = 1000;
-    public static double rl_offset = 0;
-    public static double p = .001, i = 0, d = .00004;
+public class SwerveTest extends OpMode {
+    public static double fr_offset = 1670;
+    public static double fl_offset = -600;
+    public static double rr_offset = 1750;
+    public static double rl_offset = 700;
+    public static double change = 150;
+    public static double p = 0.00055, i = 0, d = .0000001 ;
 
-    public static double f = 0.1;
+    public static double f = 0.005;
+    public DcMotorEx spindexer;
+    public DcMotorEx intake;
+    public Servo flippy;
+    public Servo blocker;
+    public Servo flap;
+    public Servo wall;
+    public DcMotorEx shoot1;
+    public DcMotorEx shoot2;
+    public Servo turret_servo_1;
+    public Servo turret_servo_2;
+    public static PIDFCoefficients pidf = new PIDFCoefficients(100, .5, .001, 7);
     public swerve_drive chassis = new swerve_drive();
+    public static double up = .31;
+    public static double down = .18;
+    public static double hold = .27;
+    public static double block = .05;
+    public static double unblock = .29;
+
+    public double test_pos = up;
+    public boolean blocking = false;
+    public static double speed = 0;
+    public static double shoot_on = 1250;
 
     public IMU imu = null;
+    public List<LynxModule> hubs = null;
+    public static double flap_pose = .06;
     @Override
     public void init(){
         imu = hardwareMap.get(IMU.class, "imu");
-        RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.UP;
-        RevHubOrientationOnRobot.UsbFacingDirection  usbDirection  = RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
+        RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
+        RevHubOrientationOnRobot.UsbFacingDirection  usbDirection  = RevHubOrientationOnRobot.UsbFacingDirection.UP;
 
         RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(logoDirection, usbDirection);
         // Initialize the IMU with this mounting orientation
         imu.initialize(new IMU.Parameters(orientationOnRobot));
-        shooter.initialize();
-        intake = hardwareMap.get(DcMotorEx.class, "intake");
-        intake.setDirection(DcMotorSimple.Direction.REVERSE);
-        spindexer = hardwareMap.get(DcMotorEx.class, "spindexer");
-        spindexer.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         imu.resetYaw();
         chassis.initialize();
+        other_stuff_init();
+        hubs = hardwareMap.getAll(LynxModule.class);
+        for (LynxModule hub : hubs){
+            hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
+        }
     }
     @Override
     public void loop() {
-
-        intake.setPower(gamepad1.right_trigger);
-        spindexer.setPower(gamepad1.right_trigger);
-        shooter.shoot1.setVelocity(1700);
-        shooter.shoot2.setVelocity(1700);
+        for(LynxModule hub : hubs){
+            hub.clearBulkCache();
+        }
         chassis.drive();
+         other_stuff_loop();
+    }
+    public void other_stuff_init(){
+        intake = hardwareMap.get(DcMotorEx.class, "intake");
+        spindexer = hardwareMap.get(DcMotorEx.class, "spindexer");
+        flippy = hardwareMap.get(Servo.class, "flippy");
+        blocker = hardwareMap.get(Servo.class, "blocker");
+        flap = hardwareMap.get(Servo.class, "flap");
+        wall = hardwareMap.get(Servo.class, "wall");
+        shoot2 = hardwareMap.get(DcMotorEx.class, "shoot2");
+        shoot1 = hardwareMap.get(DcMotorEx.class, "shoot1");
+        shoot2.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidf);
+        shoot1.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidf);
+        shoot2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        shoot1.setDirection(DcMotorSimple.Direction.REVERSE);
+        shoot1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        turret_servo_1 = hardwareMap.get(Servo.class, "turret_servo_1");
+        turret_servo_2 = hardwareMap.get(Servo.class, "turret_servo_2");
+        turret_servo_1.setDirection(Servo.Direction.REVERSE);
+        turret_servo_2.setDirection(Servo.Direction.REVERSE);
+    }
+    public void other_stuff_loop(){
+        intake.setPower(-1);
+        if(gamepad1.left_trigger > .4){
+            test_pos = up;
+            blocking = false;
+        }else{
+            test_pos = hold;
+            if(gamepad1.right_trigger > .4){
+                slow_shoot();
+            }else {
+                blocking = true;
+            }
+        }
+        if(gamepad1.a){
+            speed = shoot_on;
+        }else if(gamepad1.b){
+            speed = 0;
+        }
+        flippy.setPosition(test_pos);
+        if(blocking){
+            blocker.setPosition(block);
+        }else{
+            blocker.setPosition(unblock);
+        }
+        wall.setPosition(.5);
+        turret_servo_1.setPosition(.5 + .0072);
+        turret_servo_2.setPosition(.5 - .0072);
+        shoot2.setVelocity(speed);
+        shoot1.setVelocity(speed);
+        flap_mod();
+        flap.setPosition(flap_pose);
+        telemetry.addData("Shot speed", shoot1.getVelocity());
+        telemetry.update();
     }
     public class swerve_drive{
         double L = 0;
@@ -133,13 +215,13 @@ public class SwerveTest extends DecodeLibrary {
                 }else{
                     pod1servo.setPower(power);
                 }
-                wheel.setPower(wheel_power);
+                wheel.setPower(wheel_power / (abs(target - wheel_pos) / change));
             }
         }
         public void drive(){
             if(abs(gamepad1.left_stick_x) > .1 || abs(gamepad1.left_stick_y) > .1 || abs(gamepad1.right_stick_x) > .1){
-                L = 8.25;
-                W = 13.375;
+                L = 8.625;
+                W = 13.25;
                 R = Math.sqrt(L*L + W*W);
                 double angle = -imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
                 double fwd = gamepad1.left_stick_y * Math.cos(angle) + (-gamepad1.left_stick_x) * Math.sin(angle);
@@ -201,6 +283,50 @@ public class SwerveTest extends DecodeLibrary {
             rl.move(rl_offset, 1);
             telemetry.update();
         }
+    }
+    public double least_speed = 0;
+    public double start_speed = 0;
+    public boolean first_press = false;
+    public static double alt_flap = .05;
+
+    public void flap_mod(){
+        if(!first_press && gamepad1.left_trigger > .4){
+            start_speed = shoot1.getVelocity();
+            first_press = true;
+            least_speed = start_speed;
+            flap_pose = alt_flap;
+        }else if(first_press){
+            if(shoot1.getVelocity() < least_speed){
+                least_speed = shoot1.getVelocity();
+            }else if(shoot1.getVelocity() > least_speed + 60){
+                flap_pose = .02;
+                speed = shoot_on - 40;
+            }
+            if(gamepad1.left_trigger < .4){
+                first_press = false;
+                speed = shoot_on;
+            }
+
+        }
+    }
+    public static double slow_shot = 150;
+    public ElapsedTime slow_shoot_time = new ElapsedTime();
+    public void slow_shoot(){
+        if (blocking) {
+            if(slow_shoot_time.milliseconds() > slow_shot){
+                blocking = false;
+                test_pos = up;
+                slow_shoot_time.reset();
+            }
+
+        }else{
+            if(slow_shoot_time.milliseconds() > slow_shot){
+                blocking = true;
+                slow_shoot_time.reset();
+            }
+        }
+
+
     }
 
 

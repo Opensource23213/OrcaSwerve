@@ -22,6 +22,9 @@ public class DecodeTeleop extends DecodeLibrary {
     public void init(){
         teleop = true;
         initialize();
+        if(color == 0) {
+            y_mod += 6;
+        }
         follower.setPose(auto_pose);
         follower.startTeleopDrive();
     }
@@ -29,6 +32,5 @@ public class DecodeTeleop extends DecodeLibrary {
     @Override
     public void loop(){
         teleop_loop();
-
     }
 }

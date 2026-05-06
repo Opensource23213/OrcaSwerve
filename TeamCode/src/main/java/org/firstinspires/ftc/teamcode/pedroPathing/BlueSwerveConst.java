@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
-import com.acmerobotics.dashboard.config.Config;
 import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.control.FilteredPIDFCoefficients;
 import com.pedropathing.control.PIDFCoefficients;
@@ -16,8 +15,9 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+
 @Configurable
-public class SwerveConst {
+public class BlueSwerveConst {
     public static PinpointConstants localizerConstants = new PinpointConstants()
             .forwardPodY(4.25)
             .strafePodX(-.5)
@@ -42,9 +42,9 @@ public class SwerveConst {
             .forwardZeroPowerAcceleration(-81)
             .lateralZeroPowerAcceleration(-81)
             .centripetalScaling(.00001)
-            .translationalPIDFCoefficients(new PIDFCoefficients(0.05, 0, 0.004, 0.02))
-            .headingPIDFCoefficients(new PIDFCoefficients(.6, 0, 0.06, 0.03))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(.45, 0, 0.1, 0.06, 0.1))
+            .translationalPIDFCoefficients(new PIDFCoefficients(0.07, 0, 0.004, 0.03))
+            .headingPIDFCoefficients(new PIDFCoefficients(.6, 0, 0.03, 0.03))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(.3, 0, 0.15, 0.06, 0.1))
             .automaticHoldEnd(false)
             .turnHeadingErrorThreshold(Math.toRadians(5))
             .mass(10.9);

@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.pedroPathing.opmode;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.lynx.LynxI2cDeviceSynch;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynchSimple;
@@ -12,37 +11,38 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 @Config
 @TeleOp(name="sensorcalibrate", group="Calibrate")
 public class sensortest extends LinearOpMode {
-    public static int range = 70;
+    public static int range = 300;
+    public static String name = "color_left1";
+    public static int led = 0;
+    public static boolean color_sensor = true;
     @Override
 
     public void runOpMode() throws InterruptedException {
-        /*ColorRangefinder crf = new ColorRangefinder(hardwareMap.get(RevColorSensorV3.class, "colorfront1"));
-        waitForStart();
-        crf.setI2cAddress(0x52);
-        crf.getCalibration();
-        crf.readDistance();
-        crf.setLedBrightness(999);
+        if(color_sensor) {
+            ColorRangefinder crf = new ColorRangefinder(hardwareMap.get(RevColorSensorV3.class, name));
+            waitForStart();
+            crf.setI2cAddress(0x52);
+            crf.getCalibration();
+            crf.readDistance();
+            crf.setLedBrightness(led);
+        }else{
+            LaserRangefinder lrf = new LaserRangefinder(hardwareMap.get(RevColorSensorV3.class, name));
+            lrf.setI2CAddress(0x52);
+            waitForStart();
+            lrf.getROI();
+            lrf.getPin0Mode();
+            lrf.setDistanceMode(LaserRangefinder.DistanceMode.SHORT);
+            lrf.setTiming(10,0);
+            lrf.setPin0Analog(0, 300);
+            lrf.setPin1Digital(0, range);
+            lrf.getScanDistance(DistanceUnit.MM);
+            telemetry.addData("", lrf.getStatus());
+            telemetry.update();
+            sleep(1000);
+            lrf.getDistance(DistanceUnit.MM);
+        }
 
-        crf.setPin0Digital(ColorRangefinder.DigitalMode.HSV, 160 / 360.0 * 255, 190 / 360.0 * 255); // purple
-        crf.setPin0DigitalMaxDistance(ColorRangefinder.DigitalMode.HSV, 30); // 10mm or closer requirement
-        crf.setPin1DigitalMaxDistance(ColorRangefinder.DigitalMode.DISTANCE, 100);
-        crf.setPin1Digital(ColorRangefinder.DigitalMode.DISTANCE, 0, 30); // green
-           */
 
-        LaserRangefinder lrf = new LaserRangefinder(hardwareMap.get(RevColorSensorV3.class, "flapsensefront"));
-        lrf.setI2CAddress(0x52);
-        waitForStart();
-        lrf.getROI();
-        lrf.getPin0Mode();
-        lrf.setDistanceMode(LaserRangefinder.DistanceMode.MEDIUM);
-        lrf.setTiming(10,0);
-        lrf.setPin0Digital(0, 35);
-        lrf.setPin1Digital(0, range);
-        lrf.getScanDistance(DistanceUnit.MM);
-        telemetry.addData("", lrf.getStatus());
-        telemetry.update();
-        sleep(1000);
-        lrf.getDistance(DistanceUnit.MM);
 
     }
 }

@@ -10,8 +10,6 @@ import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-
 
 @Autonomous(name="Near_Auto", group="ABC Opmode", preselectTeleOp = "DecodeTeleop")
 public class Near_Auto extends DecodeLibrary{
@@ -32,7 +30,6 @@ public class Near_Auto extends DecodeLibrary{
     public double steps = 0;
     public ElapsedTime gate_open = new ElapsedTime();
     public ElapsedTime shooting_time = new ElapsedTime();
-    public sorting sorting = new sorting();
     public double sort_pos = 0;
     public double old_pattern = 2;
     public double old_color = 1;
@@ -46,44 +43,28 @@ public class Near_Auto extends DecodeLibrary{
         color = 1;
         teleop = false;
         initialize();
-        cameraCode.limelight.pipelineSwitch(6);
         if(color == 0) {
             follower.setPose(new Pose(122,25 - .375, Math.toRadians(180)));
             blue_init();
-            angle_offset = -90;
-            old_color = 0;
         }else{
             follower.setPose(new Pose(122,-25, Math.toRadians(-180)));
             red_init();
-            angle_offset = 90;
-            old_color = 1;
         }
-        tele_offset = turret.current_angle;
-        pattern = 2;
         follower.setMaxPower(1);
         follower.setMaxPowerScaling(1);
         follower.followPath(first_shoot);
-        sorting.sorted = true;
-        turret.manual_angle = 0;
+        intake_system.flippy_pos = flippy_hold;
     }
     @Override
     public void init_loop(){
         for(LynxModule hub : hubs){
             hub.clearBulkCache();
         }
+       /* turret.zero = true;
+        turret.manual_angle = -90;
+        turret.turret_move();*/
         follower.drivetrain.setYVelocity(0);
         follower.update();
-        cameraCode.camera_calculations();
-        turret.turret_move();
-        if (cameraCode.limelight.getLatestResult().getPipelineIndex() != 6) {
-            cameraCode.limelight.pipelineSwitch(6);
-        }
-        turret.zero = true;
-        if (color == 0) {
-            turret.manual_angle = 54;
-        } else {
-            turret.manual_angle = -50;
-        }
         if(gamepad1.a){
             color = 1;
             re_init = true;
@@ -92,38 +73,16 @@ public class Near_Auto extends DecodeLibrary{
             re_init = true;
         }
 
-        if (cameraCode.result.isValid()) {
-            if (color == 0) {
-                if (cameraCode.result.getFiducialResults().get(0).getFiducialId() == 21) {
-                    pattern = 3;
-                } else if (cameraCode.result.getFiducialResults().get(0).getFiducialId() == 22) {
-                    pattern = 1;
-                } else if(cameraCode.result.getFiducialResults().get(0).getFiducialId() == 23){
-                    pattern = 2;
-                }
-            } else {
-                if (cameraCode.result.getFiducialResults().get(0).getFiducialId() == 22) {
-                    pattern = 3;
-                } else if (cameraCode.result.getFiducialResults().get(0).getFiducialId() == 23) {
-                    pattern = 1;
-                } else if(cameraCode.result.getFiducialResults().get(0).getFiducialId() == 21){
-                    pattern = 2;
-                }
-            }
-        }
         if(old_color != color || re_init) {
             re_init = false;
             initialize();
-            cameraCode.limelight.pipelineSwitch(6);
             if (color == 0) {
                 follower.setPose(new Pose(122,25 - .375, Math.toRadians(180)));
                 blue_init();
-                angle_offset = -90;
                 old_color = 0;
             } else {
                 follower.setPose(new Pose(122,-24, Math.toRadians(-180)));
                 red_init();
-                angle_offset = 90;
                 old_color = 1;
             }
             follower.followPath(first_shoot);
@@ -135,25 +94,21 @@ public class Near_Auto extends DecodeLibrary{
         for(LynxModule hub : hubs){
             hub.clearBulkCache();
         }
+        /*turret.zero = true;
+        turret.manual_angle = -90;
+        turret.turret_move();
+        shooter.set_speed = 1200;
+        shooter.shooting();
+        intake_system.auto();*/
         follower.update();
         auto_pose = follower.getPose();
-        flippy.setPosition(flippy_pos);
-        shooter.shooting();
-        turret.zero = true;
-        turret.manual_angle = 90;
-        turret.turret_move();
-        sorting.sort();
-        shoot();
-        if(follower.atParametricEnd() || !follower.isBusy() || follower.isRobotStuck() || close(follower.getPose(), follower.getCurrentPath()) || steps == 2 || (follower.getCurrentPath() == gate && abs(follower.getPose().getY()) > abs(gate.getLastControlPoint().getY()) - error)) {
+        if(follower.atParametricEnd() || !follower.isBusy() || follower.isRobotStuck() || steps == 2 || (follower.getCurrentPath() == gate && abs(follower.getPose().getY()) > abs(gate.getLastControlPoint().getY()) - error)) {
             if(forward == .25){
                 shooting = true;
                 nextPath = first_pick;
                 shoot();
-                intake.setPower(0);
                 if(steps == 2) {
                     shooting = false;
-                    spindexer.setPower(-1);
-                    intake.setPower(1);
                     forward = .5;
                     steps = 0;
                 }
@@ -166,11 +121,8 @@ public class Near_Auto extends DecodeLibrary{
                 shooting = true;
                 nextPath = second_pick;
                 shoot();
-                intake.setPower(0);
                 if(steps == 2) {
                     shooting = false;
-                    spindexer.setPower(-1);
-                    intake.setPower(1);
                     follower.followPath(second_pick);
                     forward = 2;
                     steps = 0;
@@ -183,11 +135,8 @@ public class Near_Auto extends DecodeLibrary{
                 shooting = true;
                 nextPath = third_pick;
                 shoot();
-                intake.setPower(0);
                 if(steps == 2) {
                     shooting = false;
-                    spindexer.setPower(-1);
-                    intake.setPower(1);
                     follower.followPath(gate);
                     forward = 4;
                     steps = 0;
@@ -205,11 +154,8 @@ public class Near_Auto extends DecodeLibrary{
                 shooting = true;
                 nextPath = pick_after_stuff;
                 shoot();
-                intake.setPower(0);
                 if(steps == 2) {
                     shooting = false;
-                    spindexer.setPower(-1);
-                    intake.setPower(1);
                     forward = 6;
                     steps = 0;
                 }
@@ -227,11 +173,8 @@ public class Near_Auto extends DecodeLibrary{
                 shooting = true;
                 nextPath = pick_after_stuff;
                 shoot();
-                intake.setPower(0);
                 if(steps == 2) {
                     shooting = false;
-                    spindexer.setPower(-1);
-                    intake.setPower(1);
                     forward = 6;
                     steps = 0;
                 }
@@ -250,13 +193,13 @@ public class Near_Auto extends DecodeLibrary{
         second_pick.setConstantHeadingInterpolation(Math.toRadians(-180));
         third_shoot = new Path(new BezierLine(second_pick.getLastControlPoint(), second_shoot.getLastControlPoint()));
         third_shoot.setConstantHeadingInterpolation(Math.toRadians(-180));
-        gate = new Path(new BezierCurve(third_shoot.getLastControlPoint(), new Pose(62, -32), new Pose(60, -39)));
+        gate = new Path(new BezierCurve(third_shoot.getLastControlPoint(), new Pose(58, -32), new Pose(56, -39)));
         gate.setConstantHeadingInterpolation(Math.toRadians(-180));
         third_pick = new Path(new BezierLine(new Pose(43, -32), new Pose(33, -32)));
         third_pick.setConstantHeadingInterpolation(Math.toRadians(-180));
         fourth_shoot = new Path(new BezierLine(third_pick.getLastControlPoint(), new Pose(70, -9)));
         fourth_shoot.setConstantHeadingInterpolation(Math.toRadians(-180));
-        pick_after_stuff = new Path(new BezierCurve(fourth_shoot.getLastControlPoint(), new Pose(63, -38), new Pose(61, -38), new Pose(2, -42)));
+        pick_after_stuff = new Path(new BezierCurve(fourth_shoot.getLastControlPoint(), new Pose(58, -38), new Pose(56, -38), new Pose(2, -42)));
         pick_after_stuff.setConstantHeadingInterpolation(Math.toRadians(-180));
         fifth_shoot = new Path(new BezierLine(third_pick.getLastControlPoint(), fourth_shoot.getLastControlPoint()));
         fifth_shoot.setConstantHeadingInterpolation(Math.toRadians(-180));
@@ -270,18 +213,16 @@ public class Near_Auto extends DecodeLibrary{
     public void shoot(){
         if(shooting){
             if(steps == 0){
-                follower.followPath(nextPath);
                 shooting_time.reset();
+                intake_system.flippy_pos = flippy_up;
+                intake_system.blocking = false;
                 steps = 1;
-                spindexer.setPower(1);
-                flippy_pos = flippy_up;
-            }else if(steps == 1 && shooting_time.milliseconds() > 900){
+            }else if(steps == 1 && shooting_time.milliseconds() > 800){
+                follower.followPath(nextPath);
+                intake_system.blocking = true;
+                intake_system.flippy_pos = flippy_hold;
                 steps = 2;
-                sorting.sorted = false;
-                sorting.sort_balls = false;
             }
-            follower.drivetrain.setYVelocity(0);
-            intake.setPower(-.4);
         }
     }
     public static double error = 2;
@@ -291,196 +232,6 @@ public class Near_Auto extends DecodeLibrary{
         return x_correct && y_correct;
     }
 
-    public class sorting {
-        public boolean colorfront() {
-            front1 = sensors.colorfront1.getDistance(DistanceUnit.MM);
-            front2 = sensors.colorfront2.getDistance(DistanceUnit.MM);
-            if (front2 < 140 || front1 < 140) {
-                return true;
-            } else {
-                return false;
-            }
-
-        }
-        public double back1 = 0;
-        public double back2 = 0;
-        public double front1 = 0;
-        public double front2 = 0;
-        public boolean colorback(){
-            back1 = sensors.colorback1.getDistance(DistanceUnit.MM);
-            back2 = sensors.colorback2.getDistance(DistanceUnit.MM);
-            if(back2 < 140 || back1 < 140){
-                return true;
-            }else{
-                return false;
-            }
-
-        }
-        public boolean sort_balls = false;
-
-        public void sort() {
-            if (sort_balls) {
-                balls.clear();
-                balls.add(1.0);
-                balls.add(1.0);
-                balls.add(1.0);
-                if (sorting.sorted) {
-                    sort_balls = false;
-                } else {
-                    sorter();
-                }
-            } else {
-                flippy_pos = flippy_up;
-            }
-        }
-        public double sort_step = 0;
-        public boolean sorted = false;
-        public ElapsedTime sort_time = new ElapsedTime();
-        public boolean middleisgreen = false;
-        public void sorter(){
-            if(!sorted){
-                if(sort_step == 0){
-                    gamepad1.rumble(1000);
-                    sort_time.reset();
-                    if(index_reverse) {
-                        intake.setPower(-.2);
-                    }
-                    flippy_pos = flippy_hold;
-                    sort_step = 1;
-                }else if(sort_step == 1 && sort_time.milliseconds() >= 500){
-                    if(firstisgreen() || lastisgreen()){
-                        middleisgreen = false;
-                    }else{
-                        middleisgreen = true;
-                    }
-                    if(pattern == 1){
-                        pattern1sort();
-                    }else if(pattern == 2){
-                        pattern2sort();
-                    }else{
-                        pattern3sort();
-                    }
-                    sort_step = 2;
-                }else if(sort_step == 2){
-                    if(sort_places == 0 || sorts == 2){
-                        sort_step = 0;
-                        sorts = 0;
-                        sorted = true;
-                        sort_time.reset();
-                    }else if(sort_places == 1){
-                        sort_once();
-                    }else if(sort_places == 2){
-                        sort_twice();
-                    }
-                }else if(sort_step == 3 && sort_time.milliseconds() >= 500){
-                    sort_step = 1;
-                    sorts += 1;
-                    moving_steps = 0;
-                }
-
-            }
-
-        }
-        public double sorts = 0;
-        public double sort_places = 0;
-        public double moving_steps = 0;
-        public void sort_once(){
-            if(moving_steps == 0){
-                sort_time.reset();
-                flippy_pos = flippy_down;
-                spindexer.setPower(0);
-                moving_steps = .5;
-            }if(moving_steps == .5 && sort_time.milliseconds()> 100){
-                moving_steps = 1;
-                spindexer.setPower(-1);
-                sort_time.reset();
-            }
-            if(moving_steps == 1 && sort_time.milliseconds() > 100){
-                flippy_pos = flippy_hold;
-                sort_time.reset();
-                sort_step = 3;
-            }
-        }
-        public void sort_twice(){
-            if(moving_steps == 0){
-                sort_time.reset();
-                flippy_pos = flippy_down;
-                spindexer.setPower(0);
-                moving_steps = .5;
-            }if(moving_steps == .5 && sort_time.milliseconds()> 100){
-                moving_steps = 1;
-                spindexer.setPower(-1);
-                sort_time.reset();
-            }if(moving_steps == 1 && sort_time.milliseconds() > 260){
-                flippy_pos = flippy_hold;
-                moving_steps = 2;
-                sort_time.reset();
-                sort_step = 3;
-            }
-        }
-        public void pattern1sort(){
-            if(firstisgreen()){
-                sort_places = 0;
-            }else if(middleisgreen){
-                sort_places = 2;
-            }else if(lastisgreen()){
-                sort_places = 1;
-            }
-        }
-        public void pattern2sort(){
-            if(middleisgreen){
-                sort_places = 0;
-            }else if(lastisgreen()){
-                sort_places = 2;
-            }else if(firstisgreen()){
-                sort_places = 1;
-            }
-        }
-        public void pattern3sort(){
-            if(lastisgreen()){
-                sort_places = 0;
-            }else if(firstisgreen()){
-                sort_places = 2;
-            }else if(middleisgreen){
-                sort_places = 1;
-            }
-        }
-
-        public void auto_index(){
-
-        }
-        public boolean firstisgreen(){
-            if(front1 < front2){
-                if(sensors.colorfront1.getNormalizedColors().green > sensors.colorfront1.getNormalizedColors().blue){
-                    return true;
-                }else{
-                    return false;
-                }
-            }else{
-                if(sensors.colorfront2.getNormalizedColors().green > sensors.colorfront2.getNormalizedColors().blue){
-                    return true;
-                }else{
-                    return false;
-                }
-            }
-        }
-        public boolean sensed = false;
-        public boolean lastisgreen(){
-            if(back1 < back2){
-                if(sensors.colorback1.getNormalizedColors().green > sensors.colorback1.getNormalizedColors().blue){
-                    return true;
-                }else{
-                    return false;
-                }
-            }else{
-                if(sensors.colorback2.getNormalizedColors().green > sensors.colorback2.getNormalizedColors().blue){
-                    return true;
-                }else{
-                    return false;
-                }
-            }
-        }
-    }
 
 
 }

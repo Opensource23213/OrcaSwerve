@@ -16,8 +16,8 @@ import java.util.Collections;
 import java.util.List;
 
 @Config
-@Autonomous(name="Far 15 Auto", group="ABC Opmode", preselectTeleOp = "DecodeTeleop")
-public class Far_Auto extends DecodeLibrary{
+@Autonomous(name="15 Auto", group="ABC Opmode", preselectTeleOp = "DecodeTeleop")
+public class Fifteen extends DecodeLibrary{
     public double forward = 0.25;
     public Path first_pick;
     public Path pick_after_stuff;
@@ -47,9 +47,9 @@ public class Far_Auto extends DecodeLibrary{
         color = 1;
         teleop = false;
         if(color == 1){
-            auto_pose =new Pose(0,0, Math.toRadians(-90));
+            auto_pose =new Pose(122,-25, Math.toRadians(-90));
         }else{
-            auto_pose = new Pose(0,0, Math.toRadians(90));
+            auto_pose = new Pose(122,25, Math.toRadians(90));
         }
         initialize();
         follower.setPose(auto_pose);
@@ -95,9 +95,9 @@ public class Far_Auto extends DecodeLibrary{
         if(old_color != color || gamepad1.a) {
             initialize();
             if(color == 1){
-                auto_pose =new Pose(0,0, Math.toRadians(-90));
+                auto_pose =new Pose(122,-25, Math.toRadians(-90));
             }else{
-                auto_pose = new Pose(0,0, Math.toRadians(90));
+                auto_pose = new Pose(122,25, Math.toRadians(90));
             }
             follower.setMaxPower(1);
             follower.setMaxPowerScaling(1);
@@ -128,8 +128,8 @@ public class Far_Auto extends DecodeLibrary{
         follower.update();
         turret.turret_move();
         shooter.set_speed = shoot_multiplier * ((dead_distance * .0254) - 1.6) + shoot_power_offset + (speed_increase * abs(turret.target_angle - .5));
-        if(forward >= 6){
-            shooter.set_speed = Math.round(shooter.set_speed / 20) * 20 - 40;
+        if(forward < 1){
+            shooter.set_speed = Math.round(shooter.set_speed / 20) * 20 + 60;
         }else {
             shooter.set_speed = Math.round(shooter.set_speed / 20) * 20;
         }
@@ -207,8 +207,8 @@ public class Far_Auto extends DecodeLibrary{
                     steps = 0;
                 }
             }else if(forward == 6){
-                follower.followPath(fifth_shoot);
                 sort_balls = true;
+                follower.followPath(fifth_shoot);
                 shooting_time.reset();
                 forward = 7;
             }else if(forward == 7){
@@ -227,41 +227,41 @@ public class Far_Auto extends DecodeLibrary{
     public Path to_gate;
 
     public void red_init(){
-        first_shoot = new Path(new BezierLine(new Pose(0,0), new Pose(70, -6)));
+        first_shoot = new Path(new BezierLine(new Pose(123,-24), new Pose(80, -4)));
         first_shoot.setConstantHeadingInterpolation(Math.toRadians(-90));
-        first_pick = new Path(new BezierCurve(first_shoot.getLastControlPoint(), new Pose(48, -3), new Pose(49, -49)));
+        first_pick = new Path(new BezierCurve(first_shoot.getLastControlPoint(), new Pose(50, -3), new Pose(47, -49)));
         first_pick.setConstantHeadingInterpolation(Math.toRadians(-90));
-        second_shoot = new Path(new BezierCurve(first_pick.getLastControlPoint(),new Pose(49, -20), new Pose(70, -12)));
+        second_shoot = new Path(new BezierCurve(first_pick.getLastControlPoint(),new Pose(49, -30), new Pose(70, -12)));
         second_shoot.setConstantHeadingInterpolation(Math.toRadians(-90));
-        second_pick = new Path(new BezierCurve(second_shoot.getLastControlPoint(), new Pose(72, -38)));
+        second_pick = new Path(new BezierCurve(second_shoot.getLastControlPoint(), new Pose(70, -40)));
         second_pick.setConstantHeadingInterpolation(Math.toRadians(-90));
-        to_gate = new Path(new BezierCurve(second_pick.getLastControlPoint(), new Pose(68, -35)));
+        to_gate = new Path(new BezierCurve(second_pick.getLastControlPoint(), new Pose(64, -35)));
         to_gate.setConstantHeadingInterpolation(Math.toRadians(0));
-        gate = new Path(new BezierCurve(to_gate.getLastControlPoint(), new Pose(65, -38)));
+        gate = new Path(new BezierCurve(to_gate.getLastControlPoint(), new Pose(61, -42)));
         gate.setConstantHeadingInterpolation(Math.toRadians(0));
-        third_shoot = new Path(new BezierLine(gate.getLastControlPoint(), new Pose(78, -12)));
+        third_shoot = new Path(new BezierLine(gate.getLastControlPoint(), new Pose(72, -8)));
         third_shoot.setConstantHeadingInterpolation(0);
-        third_pick = new Path(new BezierCurve(third_shoot.getLastControlPoint(), new Pose(26, 1), new Pose(24, -46)));
+        third_pick = new Path(new BezierCurve(third_shoot.getLastControlPoint(), new Pose(26, 0), new Pose(24, -44)));
         third_pick.setConstantHeadingInterpolation(Math.toRadians(-90));
         fourth_shoot = new Path(new BezierCurve(third_pick.getLastControlPoint(), new Pose(67, -12)));
         fourth_shoot.setConstantHeadingInterpolation(Math.toRadians(-90));
-        pick_after_stuff = new Path(new BezierCurve(fourth_shoot.getLastControlPoint(), new Pose(40,-45), new Pose(21, -45), new Pose(2, -45)));
+        pick_after_stuff = new Path(new BezierCurve(fourth_shoot.getLastControlPoint(), new Pose(35,-47), new Pose(21, -50), new Pose(2, -50)));
         pick_after_stuff.setConstantHeadingInterpolation(Math.toRadians(-180));
         fifth_shoot = new Path(new BezierLine(pick_after_stuff.getLastControlPoint(), new Pose(94, -6)));
         fifth_shoot.setConstantHeadingInterpolation(Math.toRadians(-180));
     }
     public void blue_init(){
-        first_shoot = new Path(new BezierLine(new Pose(0,0), new Pose(78, 4)));
+        first_shoot = new Path(new BezierLine(new Pose(123,24), new Pose(78, 4)));
         first_shoot.setConstantHeadingInterpolation(Math.toRadians(90));
-        first_pick = new Path(new BezierCurve(first_shoot.getLastControlPoint(), new Pose(48, 3), new Pose(49, 49)));
+        first_pick = new Path(new BezierCurve(first_shoot.getLastControlPoint(), new Pose(52, 3), new Pose(49, 49)));
         first_pick.setConstantHeadingInterpolation(Math.toRadians(90));
         second_shoot = new Path(new BezierCurve(first_pick.getLastControlPoint(),new Pose(49, 20), new Pose(70, 12)));
         second_shoot.setConstantHeadingInterpolation(Math.toRadians(90));
-        second_pick = new Path(new BezierCurve(second_shoot.getLastControlPoint(), new Pose(72, 40)));
+        second_pick = new Path(new BezierCurve(second_shoot.getLastControlPoint(), new Pose(70, 40)));
         second_pick.setConstantHeadingInterpolation(Math.toRadians(90));
         to_gate = new Path(new BezierCurve(second_pick.getLastControlPoint(), new Pose(64, 35)));
         to_gate.setConstantHeadingInterpolation(Math.toRadians(0));
-        gate = new Path(new BezierCurve(to_gate.getLastControlPoint(), new Pose(61, 40)));
+        gate = new Path(new BezierCurve(to_gate.getLastControlPoint(), new Pose(61, 42)));
         gate.setConstantHeadingInterpolation(Math.toRadians(0));
         third_shoot = new Path(new BezierLine(gate.getLastControlPoint(), new Pose(72, 8)));
         third_shoot.setConstantHeadingInterpolation(0);
@@ -271,7 +271,7 @@ public class Far_Auto extends DecodeLibrary{
         fourth_shoot.setConstantHeadingInterpolation(Math.toRadians(90));
         pick_after_stuff = new Path(new BezierCurve(fourth_shoot.getLastControlPoint(), new Pose(40,50), new Pose(21, 52), new Pose(2, 52)));
         pick_after_stuff.setConstantHeadingInterpolation(Math.toRadians(180));
-        fifth_shoot = new Path(new BezierLine(pick_after_stuff.getLastControlPoint(), new Pose(94, -1)));
+        fifth_shoot = new Path(new BezierLine(pick_after_stuff.getLastControlPoint(), new Pose(94, 3)));
         fifth_shoot.setConstantHeadingInterpolation(Math.toRadians(180));
     }
     public void shoot(){
@@ -279,7 +279,7 @@ public class Far_Auto extends DecodeLibrary{
             if (steps == 0 && abs(shooter.shoot1.getVelocity() - shooter.set_speed) <= 20 && intake_system.sort_time == 0 && !intake_system.sorting) {
                 shooting_time.reset();
                 steps = .5;
-            } else if(steps == .5 && (forward != 3 || shooting_time.milliseconds() > 500)){
+            } else if(steps == .5){
                 shooting_time.reset();
                 if(forward <= .75){
                     intake_system.spindexer.setPower(-.7);

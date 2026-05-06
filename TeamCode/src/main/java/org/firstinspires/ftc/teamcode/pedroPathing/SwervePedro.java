@@ -330,10 +330,10 @@ public class SwervePedro extends Drivetrain {
 
 
 
-    public static double fr_offset = -70;
-    public static double fl_offset = 180;
-    public static double rr_offset = 400;
-    public static double rl_offset = 1100;
+    public static double fr_offset = -1130;
+    public static double fl_offset = 720;
+    public static double rr_offset = -1660;
+    public static double rl_offset = 80;
     public static double p = 0.00055, i = 0, d = .0000001 ;
 
     public static double f = 0.005;
@@ -446,13 +446,14 @@ public class SwervePedro extends Drivetrain {
 
         }
         public void x(){
-            fr.position = 315;
+            double wheel_angle = Math.toDegrees(angle);
+            fr.position = wheel_angle;
             fr.wheel_power = 0;
-            fl.position = 45;
+            fl.position = wheel_angle;
             fl.wheel_power = 0;
-            rr.position = 45;
+            rr.position = wheel_angle;
             rr.wheel_power = 0;
-            rl.position = 315;
+            rl.position = wheel_angle;
             rl.wheel_power = 0;
             fr.move(fr_offset,1);
             fl.move(fl_offset,1);
@@ -461,7 +462,7 @@ public class SwervePedro extends Drivetrain {
 
         }
         public void drive(double fwd, double str, double yaw) {
-            L = 8.25;
+            L = 9.625;
             W = 13.375;
             R = Math.sqrt(L * L + W * W);
             A = str - yaw * L / R;

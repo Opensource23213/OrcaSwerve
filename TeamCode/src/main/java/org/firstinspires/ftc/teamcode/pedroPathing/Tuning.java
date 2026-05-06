@@ -124,22 +124,20 @@ public class Tuning extends SelectableOpMode {
  */
 class LocalizationTest extends OpMode {
     @Override
-    public void init() {}
+    public void init() {
+        Tuning.follower.startTeleopDrive();
+    }
 
     /** This initializes the PoseUpdater, the mecanum drive motors, and the Panels telemetry. */
     @Override
     public void init_loop() {
-        telemetryM.debug("This will print your robot's position to telemetry while "
-                + "allowing robot control through a basic mecanum drive on gamepad 1.");
-        telemetryM.update(telemetry);
-        Tuning.follower.update();
-        Tuning.drawOnlyCurrent();
+
     }
 
     @Override
     public void start() {
-        Tuning.follower.startTeleopDrive();
         Tuning.follower.update();
+        Tuning.follower.setPose(new Pose(20,20));
     }
 
     /**
@@ -148,13 +146,16 @@ class LocalizationTest extends OpMode {
      */
     @Override
     public void loop() {
+
         Tuning.follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
         Tuning.follower.update();
-
-        telemetryM.debug("x:" + follower.getPose().getX());
-        telemetryM.debug("y:" + follower.getPose().getY());
-        telemetryM.debug("heading:" + follower.getPose().getHeading());
-        telemetryM.debug("total heading:" + follower.getTotalHeading());
+        if(gamepad1.a){
+            Tuning.follower.setPose(new Pose(20,20));
+        }
+        telemetryM.debug("x:" + Tuning.follower.getPose().getX());
+        telemetryM.debug("y:" + Tuning.follower.getPose().getY());
+        telemetryM.debug("heading:" + Tuning.follower.getPose().getHeading());
+        telemetryM.debug("total heading:" + Tuning.follower.getTotalHeading());
         telemetryM.update(telemetry);
 
         draw();
