@@ -1,16 +1,14 @@
 package org.firstinspires.ftc.teamcode.pedroPathing.opmode;
 
 import static java.lang.Math.abs;
+import static java.lang.Math.cos;
+import static java.lang.Math.tan;
 
 import com.acmerobotics.dashboard.config.Config;
-import com.pedropathing.geometry.BezierCurve;
-import com.pedropathing.geometry.BezierLine;
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.Path;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
-
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -18,12 +16,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 @Config
-@Autonomous(name="Stay_Far", group="ABC Opmode", preselectTeleOp = "DecodeTeleop")
-public class Stay_Far extends DecodeLibrary{
+@Autonomous(name="Tracking Far", group="ABC Opmode", preselectTeleOp = "DecodeTeleop")
+public class Far_With_Tracking extends DecodeLibrary{
     public double forward = 0.25;
     public ArrayList<Pose2D> first_pick;
     public ArrayList<Pose2D> pick_after_stuff;
@@ -78,14 +74,6 @@ public class Stay_Far extends DecodeLibrary{
         drive.pinpoint.update();
 
         turret.zero = true;
-        /*cam.look();
-        if(cam.tags.contains(21.0)){
-            pattern = 1;
-        }else if(cam.tags.contains(22.0)){
-            pattern = 2;
-        }else if(cam.tags.contains(23.0)){
-            pattern = 3;
-        }*/
         turret.turret_move();
         if(gamepad1.right_bumper) {
             color = 0;
@@ -113,12 +101,6 @@ public class Stay_Far extends DecodeLibrary{
             drive.pinpoint.setPosition(auto_pose);
         }
         runtime.reset();
-        telemetry.addData("pattern", pattern);
-        telemetry.addData("color", color);
-        telemetry.addData("X", auto_pose.getX(DistanceUnit.INCH));
-        telemetry.addData("Y", auto_pose.getY(DistanceUnit.INCH));
-        telemetry.addData("Y", auto_pose.getHeading(AngleUnit.DEGREES));
-        telemetry.update();
     }
 
     @Override
@@ -157,38 +139,7 @@ public class Stay_Far extends DecodeLibrary{
                         shooting = true;
                         if (steps == 2) {
                             shooting = false;
-                            /*if (count > 0) {
-
-                                if(last_intake <= 1 && pick_after_stuff.getLastControlPoint().getX() == 0){
-                                    if (color == 0) {
-                                        pick_after_stuff = new Path(new BezierCurve(new Pose(0, 0), new Pose(40, 24), new Pose(30, 44)));
-                                        pick_after_stuff.setConstantHeadingInterpolation(Math.toRadians(90));
-                                        fifth_shoot = new Path(new BezierCurve(pick_after_stuff.getLastControlPoint(), new Pose(4, 8)));
-                                        fifth_shoot.setConstantHeadingInterpolation(Math.toRadians(90));
-                                    } else {
-                                        pick_after_stuff = new Path(new BezierCurve(pick_after_stuff.getLastControlPoint(),new Pose(20, -24), new Pose(22, -44)));
-                                        pick_after_stuff.setConstantHeadingInterpolation(Math.toRadians(-90));
-                                        fifth_shoot = new Path(new BezierCurve(pick_after_stuff.getLastControlPoint(), new Pose(4, -12)));
-                                        fifth_shoot.setConstantHeadingInterpolation(Math.toRadians(-90));
-                                    }
-                                }else {
-                                    if (color == 0) {
-                                        pick_after_stuff = new Path(new BezierCurve(new Pose(0, 0), new Pose(-2, 44)));
-                                        pick_after_stuff.setConstantHeadingInterpolation(Math.toRadians(90));
-                                        fifth_shoot = new Path(new BezierCurve(pick_after_stuff.getLastControlPoint(), new Pose(4, 8)));
-                                        fifth_shoot.setConstantHeadingInterpolation(Math.toRadians(90));
-                                    } else {
-                                        pick_after_stuff = new Path(new BezierCurve(new Pose(0, 0), new Pose(-2, -44)));
-                                        pick_after_stuff.setConstantHeadingInterpolation(Math.toRadians(-90));
-                                        fifth_shoot = new Path(new BezierCurve(pick_after_stuff.getLastControlPoint(), new Pose(4, -12)));
-                                        fifth_shoot.setConstantHeadingInterpolation(Math.toRadians(-90));
-                                    }
-                                }
-                            }*/
-                            drive.currentPath = new ArrayList<>(pick_after_stuff);
-                            count += 1;
-                            forward = 3;
-                            steps = 0;
+                            pick_balls();
                         }
                     }
                 }
@@ -248,6 +199,95 @@ public class Stay_Far extends DecodeLibrary{
                     intake_system.blocking = true;
                     steps = 2;
                 }
+            }
+        }
+    }
+    public double x = 0;
+    public double balls = 0;
+    public void pick_balls(){
+        for(LynxModule hub : hubs){
+            hub.clearBulkCache();
+        }
+        double[] python = cameraCode.limelight.getLatestResult().getPythonOutput();
+        if(python[1] != 0 && cameraCode.limelight.isConnected()) {
+            double angle = 0;
+            double x_value = python[0];
+            double y_value = 46 - drive.position.getY(DistanceUnit.INCH);
+            if(color == 1){
+                angle = 180;
+                x_value *= -1;
+                y_value = 46 + drive.position.getY(DistanceUnit.INCH);
+            }
+            x_value += 6.5;
+            y_value *= tan(Math.toRadians(abs(drive.position.getHeading(AngleUnit.DEGREES)) - 90));
+            y_value *= -1;
+            x_value = y_value + x_value;
+            if(x_value < -drive.position.getX(DistanceUnit.INCH)){
+                x_value = -drive.position.getX(DistanceUnit.INCH);
+            }
+            x_value += drive.position.getX(DistanceUnit.INCH);
+            if(x_value > 3){
+                if(color == 1) {
+                    pick_after_stuff = new ArrayList<>(Arrays.asList(new Pose2D(DistanceUnit.INCH, x_value, -20, AngleUnit.DEGREES, angle),new Pose2D(DistanceUnit.INCH, x_value, -47, AngleUnit.DEGREES, angle), new Pose2D(DistanceUnit.INCH, 4, -8, AngleUnit.DEGREES, angle)));
+                }else{
+                    pick_after_stuff = new ArrayList<>(Arrays.asList(new Pose2D(DistanceUnit.INCH, x_value, 20, AngleUnit.DEGREES, angle),new Pose2D(DistanceUnit.INCH, x_value, 47, AngleUnit.DEGREES, angle), new Pose2D(DistanceUnit.INCH, 4, 8, AngleUnit.DEGREES, angle)));
+                }
+            }else{
+                if(color == 1) {
+                    pick_after_stuff = new ArrayList<>(Arrays.asList(new Pose2D(DistanceUnit.INCH, x_value, -44, AngleUnit.DEGREES, angle), new Pose2D(DistanceUnit.INCH, 4, -8, AngleUnit.DEGREES, angle)));
+                }else{
+                    pick_after_stuff = new ArrayList<>(Arrays.asList(new Pose2D(DistanceUnit.INCH, x_value, 44, AngleUnit.DEGREES, angle), new Pose2D(DistanceUnit.INCH, 4, 8, AngleUnit.DEGREES, angle)));
+                }
+            }
+            if(pick_after_stuff.get(pick_after_stuff.size() - 2).getX(DistanceUnit.INCH) > 26 && python[2] != 0){
+                angle = 0;
+                x_value = python[2];
+                y_value = 46 - drive.position.getY(DistanceUnit.INCH);
+                if(color == 1){
+                    angle = 180;
+                    x_value *= -1;
+                    y_value = 46 + drive.position.getY(DistanceUnit.INCH);
+                }
+                x_value += 6.5;
+                y_value *= tan(Math.toRadians(abs(drive.position.getHeading(AngleUnit.DEGREES)) - 90));
+                y_value *= -1;
+                x_value = y_value + x_value;
+                if(x_value < -drive.position.getX(DistanceUnit.INCH)){
+                    x_value = -drive.position.getX(DistanceUnit.INCH);
+                }
+                x_value += drive.position.getX(DistanceUnit.INCH);
+                if(x_value > 3){
+                    if(color == 1) {
+                        pick_after_stuff = new ArrayList<>(Arrays.asList(new Pose2D(DistanceUnit.INCH, x_value, -20, AngleUnit.DEGREES, angle),new Pose2D(DistanceUnit.INCH, x_value, -47, AngleUnit.DEGREES, angle), new Pose2D(DistanceUnit.INCH, 4, -8, AngleUnit.DEGREES, angle)));
+                    }else{
+                        pick_after_stuff = new ArrayList<>(Arrays.asList(new Pose2D(DistanceUnit.INCH, x_value, 20, AngleUnit.DEGREES, angle),new Pose2D(DistanceUnit.INCH, x_value, 47, AngleUnit.DEGREES, angle), new Pose2D(DistanceUnit.INCH, 4, 8, AngleUnit.DEGREES, angle)));
+                    }
+                }else{
+                    if(color == 1) {
+                        pick_after_stuff = new ArrayList<>(Arrays.asList(new Pose2D(DistanceUnit.INCH, x_value, -44, AngleUnit.DEGREES, angle), new Pose2D(DistanceUnit.INCH, 4, -8, AngleUnit.DEGREES, angle)));
+                    }else{
+                        pick_after_stuff = new ArrayList<>(Arrays.asList(new Pose2D(DistanceUnit.INCH, x_value, 44, AngleUnit.DEGREES, angle), new Pose2D(DistanceUnit.INCH, 4, 8, AngleUnit.DEGREES, angle)));
+                    }
+                }
+                drive.currentPath = new ArrayList<>(pick_after_stuff);
+                count += 1;
+                forward = 3;
+                steps = 0;
+                x = x_value;
+                balls = python[1];
+            }else if(pick_after_stuff.get(pick_after_stuff.size() - 2).getX(DistanceUnit.INCH) <= 26) {
+                drive.currentPath = new ArrayList<>(pick_after_stuff);
+                count += 1;
+                forward = 3;
+                steps = 0;
+                x = x_value;
+                balls = python[1];
+            }
+        }else if(!cameraCode.limelight.isConnected()){
+            if(color == 1) {
+                pick_after_stuff = new ArrayList<>(Arrays.asList(new Pose2D(DistanceUnit.INCH, 1, -47, AngleUnit.DEGREES, 180), new Pose2D(DistanceUnit.INCH, 4, -8, AngleUnit.DEGREES, 180)));
+            }else{
+                pick_after_stuff = new ArrayList<>(Arrays.asList(new Pose2D(DistanceUnit.INCH, 1, 47, AngleUnit.DEGREES, 0), new Pose2D(DistanceUnit.INCH, 4, 8, AngleUnit.DEGREES, 0)));
             }
         }
     }

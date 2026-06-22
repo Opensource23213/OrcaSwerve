@@ -10,7 +10,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 public class TurretServoTest extends DecodeLibrary{
     public static double test_pos = .5;
-    public static double offset = 0.0072;
+    public static double offset1 = 0;
+    public static double offset2 = 0;
     public Servo turret_servo_1;
     public Servo turret_servo_2;
     public AnalogInput servo_pose;
@@ -25,8 +26,8 @@ public class TurretServoTest extends DecodeLibrary{
     }
     @Override
     public void loop(){
-        turret_servo_1.setPosition(test_pos + offset);
-        turret_servo_2.setPosition(test_pos - offset );
+        turret_servo_1.setPosition(test_pos + offset1);
+        turret_servo_2.setPosition(test_pos + offset2);
         telemetry.addData("Servo Position", test_pos);
         telemetry.addData("servo_pose", (1.632 - servo_pose.getVoltage()) / .517 * 90);
         telemetry.update();

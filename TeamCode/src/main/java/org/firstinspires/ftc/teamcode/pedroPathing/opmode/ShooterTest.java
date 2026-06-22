@@ -1,56 +1,66 @@
 package org.firstinspires.ftc.teamcode.pedroPathing.opmode;
 
 import com.acmerobotics.dashboard.config.Config;
-import com.arcrobotics.ftclib.controller.PIDController;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
-import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.pedroPathing.opmode.DecodeLibrary.intake;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
+import java.util.ArrayList;
+
+@TeleOp(name="ShooterTest", group="ABC Opmode")
 @Config
-
-@TeleOp(name="Shooter Test", group="ABC Opmode")
-
-public class ShooterTest extends OpMode {
-    public Servo flap;
-    public PIDController controller;
-    public DcMotorEx shoot1;
-    public DcMotorEx shoot2;
-    public DcMotorEx intake;
-    public static double test_pos = .5;
-    public static double p = 200, i = 1, d = 0;
-
-    public static double f = 8 ;
-    public static double speed = 0;
-    @Override
-    public void init(){
-        //initialize();
-        controller = new PIDController(p, i, d);
-        flap = hardwareMap.get(Servo.class, "flap");
-        shoot1 = hardwareMap.get(DcMotorEx.class, "shoot1");
-        shoot2 = hardwareMap.get(DcMotorEx.class, "shoot2");
-        PIDFCoefficients pidf = new PIDFCoefficients(p, i, d, f);
-        shoot2.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidf);
-        shoot2.setDirection(DcMotorSimple.Direction.REVERSE);
-        shoot2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        shoot1.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidf);
-        shoot1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        intake = hardwareMap.get(DcMotorEx.class, "intake");
-        intake.setDirection(DcMotorSimple.Direction.REVERSE);
+public class ShooterTest extends DecodeLibrary{
+    public static double test_speed = 0;
+    public static double spindexer_speed = .8;
+    public static PIDFCoefficients pidf = new PIDFCoefficients(100, .5, .001, 7);
+    public void init() {
+        shooter.initialize();
+        intake_system.init();
+        hubs = hardwareMap.getAll(LynxModule.class);
+        for (LynxModule hub : hubs){
+            hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
+        }
     }
+
     @Override
-    public void loop(){
-        shoot1.setVelocity(speed);
-        shoot2.setVelocity(speed);
-        flap.setPosition(test_pos);
-        intake.setPower(gamepad1.right_trigger);
+    public void loop() {
+        for (LynxModule hub : hubs) {
+            hub.clearBulkCache();
+        }
+        if(shooter.pidf != pidf){
+            shooter.pidf = new PIDFCoefficients(pidf);
+            shooter.shoot2.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, shooter.pidf);
+            shooter.shoot1.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, shooter.pidf);
+        }
+        if(gamepad1.left_trigger > .4){
+            intake_system.spindexer.setPower(-spindexer_speed);
+            intake_system.intake.setPower(-1);
+            intake_system.flippy_pos = flippy_up;
+            intake_system.blocking = false;
+        }else if(gamepad1.right_trigger > .4){
+            intake_system.spindexer.setPower(1);
+            intake_system.intake.setPower(-1);
+            intake_system.flippy_pos = flippy_down;
+            intake_system.blocking = true;
+        }else{
+            intake_system.spindexer.setPower(0);
+            intake_system.intake.setPower(0);
+            intake_system.flippy_pos = flippy_up;
+            intake_system.blocking = true;
+        }
+        if(intake_system.blocking){
+            intake_system.blocker.setPosition(intake_system.block);
+        }else{
+            intake_system.blocker.setPosition(intake_system.unblock);
+        }
+        intake_system.flippy.setPosition(intake_system.flippy_pos);
+        shooter.shoot1.setVelocity(test_speed);
+        shooter.shoot2.setVelocity(test_speed);
+        shooter.flap.setPosition(.02);
+        telemetry.addData("Shooter Speed", shooter.shoot1.getVelocity());
         telemetry.update();
     }
-
 }

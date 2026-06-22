@@ -1,24 +1,16 @@
 package org.firstinspires.ftc.teamcode.pedroPathing.opmode;
 
-import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
-import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.util.ElapsedTime;
-
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
 @Config
-@TeleOp(name="DecodeTeleop", group="ABC Opmode")
-public class DecodeTeleop extends DecodeLibrary {
+@TeleOp(name="ShortTeleop", group="ABC Opmode")
+public class ShortTeleop extends DecodeLibrary {
     public boolean start = false;
     double times = 0;
     boolean back = false;
     public static double amps = 2000;
     public static double loop_time = 100;
-    public ElapsedTime loop = new ElapsedTime();
-    public double time = 0;
 
 
     @Override
@@ -26,10 +18,12 @@ public class DecodeTeleop extends DecodeLibrary {
         teleop = true;
         initialize();
         drive.pinpoint.setPosition(auto_pose);
+        short_match();
     }
 
     @Override
     public void loop(){
         teleop_loop();
+
     }
 }
